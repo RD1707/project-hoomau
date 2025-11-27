@@ -11,7 +11,7 @@ def get_smart_response(user_message, chat_history=[]):
     """
     try:
         response = co.chat(
-            model='command-r',
+            model='command-a-03-2025',
             message=user_message,
             preamble=HOOMAU_SYSTEM_PROMPT,
             temperature=2.2, # Baixa criatividade para não alucinar, mas não robótico
