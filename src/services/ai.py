@@ -2,18 +2,20 @@ import cohere
 from src.config import COHERE_API_KEY
 from src.utils.prompts import HOOMAU_SYSTEM_PROMPT
 
+# Inicializa o cliente do Cohere
 co = cohere.Client(COHERE_API_KEY)
 
-def get_smart_response(user_message):
+def get_smart_response(user_message, chat_history=[]):
     """
-    Envia a mensagem do usuário para o Cohere e retorna a resposta da IA.
+    Envia a mensagem + o histórico da conversa para a IA ter contexto.
     """
     try:
         response = co.chat(
-            model='command-a-03-2025',
+            model='command-r',
             message=user_message,
-            preamble=HOOMAU_SYSTEM_PROMPT, 
-            temperature=0.3 
+            preamble=HOOMAU_SYSTEM_PROMPT,
+            temperature=2.2, # Baixa criatividade para não alucinar, mas não robótico
+            chat_history=chat_history # <--- AQUI ESTÁ A MEMÓRIA
         )
         
         return response.text
