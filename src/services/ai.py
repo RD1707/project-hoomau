@@ -14,7 +14,7 @@ def get_smart_response(user_message, chat_history=[]):
             model='command-a-03-2025',
             message=user_message,
             preamble=HOOMAU_SYSTEM_PROMPT,
-            temperature=2.2, # Baixa criatividade para não alucinar, mas não robótico
+            temperature=0.8, # Baixa criatividade para não alucinar, mas não robótico
             chat_history=chat_history # <--- AQUI ESTÁ A MEMÓRIA
         )
         
