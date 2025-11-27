@@ -1,15 +1,6 @@
 import requests
+import json
 from src.config import WHATSAPP_TOKEN, WHATSAPP_API_URL
-
-def sanitize_number(number):
-    """
-    Força a adição do 9º dígito em números de celular do Brasil (DDD > 29 ou gerais).
-    Transforma 557183000082 -> 5571983000082
-    """
-    # Se for Brasil (55) e tiver 12 dígitos (DDD + 8 números), ENFIA O 9
-    if number.startswith("55") and len(number) == 12:
-        return number[:4] + "9" + number[4:]
-    return number
 
 def send_message(to_number, text_body):
     headers = {
@@ -17,39 +8,46 @@ def send_message(to_number, text_body):
         "Content-Type": "application/json"
     }
 
-    # 1. Calcula a versão do número COM o 9º dígito
-    corrected_number = sanitize_number(to_number)
+    # FORÇAR O NÚMERO COM 9 DÍGITOS (Padrão Brasil para receber template)
+    # Se chegar 55718... transforma em 557198...
+    target_number = to_number
+    if target_number.startswith("55") and len(target_number) == 12:
+        target_number = target_number[:4] + "9" + target_number[4:]
 
-    # 2. Se o número mudou (ou seja, precisava do 9), tenta enviar para o CORRIGIDO primeiro
-    if corrected_number != to_number:
-        print(f"🔄 Forçando envio para número com 9º dígito: {corrected_number}")
-        if _try_send(corrected_number, text_body, headers):
-            return # Se deu certo com o 9, para aqui.
+    print(f"🚀 Tentando enviar TEMPLATE para: {target_number}")
 
-    # 3. Se falhar (ou se não precisava corrigir), tenta o original
-    print(f"🔄 Tentando envio para número original: {to_number}")
-    _try_send(to_number, text_body, headers)
-
-def _try_send(to_number, text_body, headers):
+    # Payload para enviar o Template 'hello_world'
+    # Esse template é imune a bloqueios de sessão
     payload = {
         "messaging_product": "whatsapp",
-        "to": to_number,
-        "type": "text",
-        "text": {"body": text_body}
+        "to": target_number,
+        "type": "template",
+        "template": {
+            "name": "hello_world",
+            "language": {
+                "code": "en_US"
+            }
+        }
     }
 
     try:
         response = requests.post(WHATSAPP_API_URL, headers=headers, json=payload)
-        response_json = response.json()
-
+        
         if response.status_code in [200, 201]:
-            print(f"✅ SUCESSO! Facebook aceitou envio para {to_number}")
+            print(f"✅ TEMPLATE ENVIADO! Status: {response.status_code}")
             return True
         
-        print(f"⚠️ Falha ao enviar para {to_number}: {response.status_code}")
-        print(f"Erro FB: {response.text}")
-        return False
+        print(f"⚠️ Erro no Template: {response.status_code} - {response.text}")
+        
+        # Se o template falhar, tenta o método antigo de texto como fallback
+        print("🔄 Tentando mensagem de texto normal...")
+        payload_text = {
+            "messaging_product": "whatsapp",
+            "to": target_number,
+            "type": "text",
+            "text": {"body": text_body}
+        }
+        requests.post(WHATSAPP_API_URL, headers=headers, json=payload_text)
 
     except Exception as e:
-        print(f"❌ Erro crítico de conexão: {e}")
-        return False
+        print(f"❌ Erro crítico: {e}")
